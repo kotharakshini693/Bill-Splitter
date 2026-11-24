@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bill Splitter</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e8edf2;--surface:#fff;--ink:#162231;--mute:#5d6b7a;--line:#cdd6df;--blue:#1f4fd8;--blue-ink:#fff;--yellow:#f4b928;--red:#d23f36;--green:#1d8a5b;
+--sans:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;--serif:"Source Serif 4",Georgia,serif;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101820;--surface:#1a2430;--ink:#e9eef3;--mute:#93a1b0;--line:#2c3947;--blue:#6f93ff;--blue-ink:#0c1420;--yellow:#f4b928;--red:#ff6f66;--green:#46c48d}}
+:root[data-theme="dark"]{--bg:#101820;--surface:#1a2430;--ink:#e9eef3;--mute:#93a1b0;--line:#2c3947;--blue:#6f93ff;--blue-ink:#0c1420;--red:#ff6f66;--green:#46c48d}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--sans);min-height:100vh}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 18px 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:26px;letter-spacing:-.02em}
+.coin-wrap{perspective:400px;width:38px;height:38px}
+.coin{width:38px;height:38px;border-radius:50%;background:var(--yellow);border:3px solid var(--ink);display:grid;place-items:center;font-weight:800;font-size:18px;color:#162231;animation:spin 5s linear infinite;transform-style:preserve-3d}
+@keyframes spin{to{transform:rotateY(360deg)}}
+nav{display:flex;gap:6px;background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:4px}
+nav button{border:0;background:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.view{display:none}.view.on{display:block}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:2px solid var(--ink);border-radius:16px;padding:22px;box-shadow:6px 6px 0 var(--ink)}
+h1,h2{margin:0 0 6px;letter-spacing:-.02em}
+h1{font-size:34px;line-height:1.1;font-weight:800}
+h2{font-size:22px}
+.lead{font-family:var(--serif);color:var(--mute);margin:0 0 18px;max-width:46ch}
+label{display:block;font-weight:600;margin:14px 0 6px}
+input,select{width:100%;padding:11px 12px;border:2px solid var(--line);border-radius:10px;background:var(--bg)}
+input:focus,select:focus{border-color:var(--blue);outline:none}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.err{color:var(--red);font-size:14px;min-height:20px;margin:4px 0 0}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.chip{border:2px solid var(--ink);background:var(--surface);border-radius:99px;padding:6px 14px;font-weight:600;cursor:pointer;transition:transform .15s}
+.chip:active{transform:scale(.94)}
+.chip.on{background:var(--yellow);color:#162231}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:44px;height:44px;border-radius:10px;border:2px solid var(--ink);background:var(--surface);font-size:22px;font-weight:800;cursor:pointer}
+.stepper input{text-align:center;font-weight:800;font-size:20px}
+.btn{border:2px solid var(--ink);background:var(--blue);color:var(--blue-ink);font-weight:800;padding:13px 20px;border-radius:12px;cursor:pointer;box-shadow:4px 4px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.btn.alt{background:var(--surface);color:var(--ink)}
+.btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+/* 3D receipt */
+.stage{perspective:1000px;display:grid;place-items:center;padding:10px 0}
+.receipt{width:min(340px,100%);transform-style:preserve-3d;transition:transform .15s ease-out;animation:float 6s ease-in-out infinite}
+.receipt.flip{animation:flip .9s ease-in-out}
+@keyframes float{50%{translate:0 -10px}}
+@keyframes flip{to{transform:rotateY(360deg)}}
+.paper{background:#fffdf7;color:#162231;padding:24px 22px 30px;border:2px solid #162231;position:relative;box-shadow:10px 14px 0 rgba(22,34,49,.9);
+clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),95% 100%,90% calc(100% - 10px),85% 100%,80% calc(100% - 10px),75% 100%,70% calc(100% - 10px),65% 100%,60% calc(100% - 10px),55% 100%,50% calc(100% - 10px),45% 100%,40% calc(100% - 10px),35% 100%,30% calc(100% - 10px),25% 100%,20% calc(100% - 10px),15% 100%,10% calc(100% - 10px),5% 100%,0 calc(100% - 10px))}
+.paper .t{display:flex;justify-content:space-between;padding:5px 0;border-bottom:2px dashed #b9bfc6;font-size:15px}
+.paper .big{text-align:center;padding:18px 0 8px;transform:translateZ(40px)}
+.paper .big b{display:block;font-size:56px;line-height:1;font-weight:800;letter-spacing:-.03em;color:#1f4fd8}
+.paper .big span{font-family:var(--serif);color:#5d6b7a}
+.tag{display:inline-block;font-size:13px;font-weight:600;padding:2px 10px;border-radius:99px;border:2px solid var(--red);color:var(--red)}
+.tag.ok{border-color:var(--green);color:var(--green)}
+.warn{min-height:26px;text-align:center;margin-top:8px}
+/* history */
+.tools{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+.tools input{flex:2 1 200px}.tools select{flex:1 1 140px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:620px}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
+th{font-weight:800;border-bottom:2px solid var(--ink)}
+tr.new{animation:rowin .6s ease-out;transform-origin:top}
+@keyframes rowin{from{transform:perspective(600px) rotateX(-90deg);opacity:0}}
+td button{border:0;background:none;color:var(--red);font-weight:600;cursor:pointer}
+.empty{padding:28px;text-align:center;color:var(--mute);font-family:var(--serif)}
+.pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:12px}
+/* summary */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:26px}
+.stat{background:var(--surface);border:2px solid var(--ink);border-radius:14px;padding:14px 16px}
+.stat b{display:block;font-size:28px;font-weight:800;letter-spacing:-.02em}
+.stat span{color:var(--mute);font-size:14px}
+.bars{perspective:900px;padding:16px 0}
+.bars .in{display:flex;align-items:flex-end;gap:18px;height:240px;transform:rotateX(18deg) rotateY(-14deg);transform-style:preserve-3d;border-bottom:3px solid var(--ink)}
+.bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:13px;font-weight:600}
+.col{width:100%;max-width:70px;background:var(--blue);border:2px solid var(--ink);transform-origin:bottom;animation:grow .9s cubic-bezier(.2,.9,.3,1.2) both;position:relative;box-shadow:12px -8px 0 var(--yellow)}
+@keyframes grow{from{transform:scaleY(0)}}
+.lbls{display:flex;gap:18px;margin-top:8px;font-size:13px;color:var(--mute);text-align:center}.lbls div{flex:1}
+svg.spark{width:100%;height:120px;margin-top:6px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,120px);background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:12px;font-weight:600;transition:transform .35s;z-index:9}
+.toast.on{transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand"><div class="coin-wrap"><div class="coin">$</div></div>Bill Splitter</div>
+  <nav role="tablist" aria-label="Sections">
+    <button role="tab" aria-selected="true" data-v="split">Split</button>
+    <button role="tab" aria-selected="false" data-v="hist">History</button>
+    <button role="tab" aria-selected="false" data-v="sum">Summary</button>
+  </nav>
+</header>
+
+<section class="view on" id="split">
+ <div class="grid">
+  <div class="panel">
+    <h1>Who owes what?</h1>
+    <p class="lead">Enter the bill, add a tip if you like, and get each person's share.</p>
+    <label for="desc">What was it for?</label>
+    <input id="desc" maxlength="40" placeholder="Friday dinner" autocomplete="off">
+    <p class="err" id="e-desc"></p>
+    <div class="row">
+      <div><label for="cat">Category</label>
+        <select id="cat"><option>Food</option><option>Rent &amp; bills</option><option>Travel</option><option>Fun</option><option>Other</option></select></div>
+      <div><label for="bill">Bill total</label><input id="bill" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
+    </div>
+    <p class="err" id="e-bill"></p>
+    <label for="ppl">People</label>
+    <div class="stepper"><button type="button" id="minus" aria-label="Fewer people">&minus;</button><input id="ppl" inputmode="numeric" value="2"><button type="button" id="plus" aria-label="More people">+</button></div>
+    <p class="err" id="e-ppl"></p>
+    <label for="tip">Tip percent (optional)</label>
+    <div class="row"><input id="tip" inputmode="decimal" value="0"><div class="chips" id="chips" style="margin:0;align-items:center"></div></div>
+    <p class="err" id="e-tip"></p>
+    <div class="btns"><button class="btn" id="save">Save split</button><button class="btn alt" id="clear">Clear</button></div>
+  </div>
+  <div class="stage"><div class="receipt" id="rcp"><div class="paper">
+    <div style="font-weight:800;font-size:20px;text-align:center;margin-bottom:8px" id="r-title">Your receipt</div>
+    <div class="t"><span>Bill</span><b id="r-bill">$0.00</b></div>
+    <div class="t"><span>Tip <span id="r-pct">0%</span></span><b id="r-tip">$0.00</b></div>
+    <div class="t"><span>Total</span><b id="r-total">$0.00</b></div>
+    <div class="t"><span>People</span><b id="r-ppl">2</b></div>
+    <div class="big"><span>Each person pays</span><b id="r-share">$0.00</b></div>
+    <div class="warn" id="r-warn"></div>
+  </div></div></div>
+ </div>
+</section>
+
+<section class="view" id="hist">
+  <div class="panel">
+    <h2>History</h2>
+    <div class="tools">
+      <input id="q" type="search" placeholder="Search by description" aria-label="Search">
+      <select id="fcat" aria-label="Filter by category"><option value="">All categories</option><option>Food</option><option>Rent &amp; bills</option><option>Travel</option><option>Fun</option><option>Other</option></select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Date</th><th>For</th><th>Category</th><th>Bill</th><th>Tip</th><th>People</th><th>Each</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+    <div class="pager"><button class="btn alt" id="prev" style="padding:6px 14px;box-shadow:none">Prev</button><span id="pg"></span><button class="btn alt" id="next" style="padding:6px 14px;box-shadow:none">Next</button></div>
+    <div class="btns"><button class="btn alt" id="x-csv">Export CSV</button><button class="btn alt" id="x-md">Export Markdown</button><button class="btn alt" id="seed">Load sample data</button><button class="btn alt" id="wipe">Delete all</button></div>
+  </div>
+</section>
+
+<section class="view" id="sum">
+  <div class="stats" id="stats"></div>
+  <div class="grid">
+    <div class="panel"><h2>Spending by category</h2><div class="bars"><div class="in" id="bars"></div></div><div class="lbls" id="lbls"></div></div>
+    <div class="panel"><h2>Each person's share, latest 12</h2><svg class="spark" id="spark" viewBox="0 0 300 120" preserveAspectRatio="none" role="img" aria-label="Share trend"></svg><p class="lead" id="trend" style="margin:8px 0 0"></p></div>
+  </div>
+</section>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const CUR="$", KEY="billsplitter.v1", MAXSHARE=75, MAXTIP=30, PAGE=8;
+const $=id=>document.getElementById(id);
+const money=n=>CUR+(Math.round(n*100)/100).toFixed(2);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let data=[],page=0,newId=null;
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY)||"[]");data=Array.isArray(r)?r.filter(x=>x&&typeof x.bill==="number"&&x.people>0):[]}catch(e){data=[]}}
+function store(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){toast("Could not save in this browser")}}
+let tt;function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),2200)}
+
+/* tabs */
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id===b.dataset.v));
+  if(b.dataset.v==="hist")renderHist();if(b.dataset.v==="sum")renderSum();
+});
+
+/* validation + live calc */
+function read(){
+  const e={},d=$("desc").value.trim(),bill=parseFloat($("bill").value.replace(",",".")),p=Number($("ppl").value),tip=parseFloat($("tip").value||"0");
+  if(!d)e.desc="Add a short description.";
+  if(!/^\d*\.?\d{0,2}$/.test($("bill").value.replace(",","."))||!isFinite(bill)||bill<=0)e.bill="Enter an amount above 0, with up to 2 decimals.";
+  else if(bill>100000)e.bill="Amount must be 100,000 or less.";
+  if(!Number.isInteger(p)||p<1||p>50)e.ppl="People must be a whole number from 1 to 50.";
+  if(!isFinite(tip)||tip<0||tip>100)e.tip="Tip must be between 0 and 100.";
+  return{e,d,bill,p,tip};
+}
+function calc(bill,p,tip){const t=bill*tip/100,total=bill+t;return{t,total,share:total/p}}
+function live(){
+  const bill=parseFloat($("bill").value.replace(",","."))||0,p=Math.max(1,parseInt($("ppl").value)||1),tip=Math.min(100,Math.max(0,parseFloat($("tip").value)||0));
+  const c=calc(bill,p,tip);
+  $("r-title").textContent=$("desc").value.trim()||"Your receipt";
+  $("r-bill").textContent=money(bill);$("r-pct").textContent=tip+"%";$("r-tip").textContent=money(c.t);
+  $("r-total").textContent=money(c.total);$("r-ppl").textContent=p;$("r-share").textContent=money(c.share);
+  $("r-warn").innerHTML=!bill?"":(c.share>MAXSHARE?'<span class="tag">High share</span> ':"")+(tip>MAXTIP?'<span class="tag">Unusual tip</span>':"")||'<span class="tag ok">Looks normal</span>';
+  document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",Number(c.dataset.t)===tip));
+}
+["desc","bill","ppl","tip"].forEach(i=>$(i).addEventListener("input",live));
+[0,10,15,20].forEach(t=>{const b=document.createElement("button");b.type="button";b.className="chip";b.dataset.t=t;b.textContent=t+"%";b.onclick=()=>{$("tip").value=t;live()};$("chips").appendChild(b)});
+$("minus").onclick=()=>{$("ppl").value=Math.max(1,(parseInt($("ppl").value)||2)-1);live()};
+$("plus").onclick=()=>{$("ppl").value=Math.min(50,(parseInt($("ppl").value)||1)+1);live()};
+$("clear").onclick=()=>{["desc","bill"].forEach(i=>$(i).value="");$("ppl").value=2;$("tip").value=0;["desc","bill","ppl","tip"].forEach(i=>$("e-"+i).textContent="");live()};
+$("save").onclick=()=>{
+  const r=read();["desc","bill","ppl","tip"].forEach(i=>$("e-"+i).textContent=r.e[i]||"");
+  if(Object.keys(r.e).length){toast("Fix the highlighted fields");return}
+  const c=calc(r.bill,r.p,r.tip);
+  const rec={id:Date.now(),date:new Date().toISOString().slice(0,10),desc:r.d,cat:$("cat").value,bill:r.bill,tip:r.tip,people:r.p,total:+c.total.toFixed(2),share:+c.share.toFixed(2)};
+  data.unshift(rec);newId=rec.id;store();
+  const rc=$("rcp");rc.classList.remove("flip");void rc.offsetWidth;rc.classList.add("flip");
+  toast("Saved: "+money(rec.share)+" each");
+};
+
+/* 3D tilt on receipt */
+const stage=document.querySelector(".stage"),rcp=$("rcp");
+stage.addEventListener("pointermove",e=>{const b=stage.getBoundingClientRect(),x=(e.clientX-b.left)/b.width-.5,y=(e.clientY-b.top)/b.height-.5;rcp.style.animation="none";rcp.style.transform=`rotateY(${x*28}deg) rotateX(${-y*22}deg)`});
+stage.addEventListener("pointerleave",()=>{rcp.style.transform="";rcp.style.animation=""});
+rcp.addEventListener("animationend",()=>rcp.classList.remove("flip"));
+
+/* history */
+function filtered(){const q=$("q").value.toLowerCase().trim(),c=$("fcat").value;return data.filter(r=>(!c||r.cat===c)&&(!q||r.desc.toLowerCase().includes(q)||r.cat.toLowerCase().includes(q)))}
+function renderHist(){
+  const f=filtered(),pages=Math.max(1,Math.ceil(f.length/PAGE));page=Math.min(page,pages-1);
+  const s=f.slice(page*PAGE,page*PAGE+PAGE);
+  $("rows").innerHTML=s.length?s.map(r=>`<tr class="${r.id===newId?"new":""}"><td>${esc(r.date)}</td><td>${esc(r.desc)}</td><td>${esc(r.cat)}</td><td>${money(r.bill)}</td><td>${r.tip}%${r.tip>MAXTIP?' <span class="tag">high</span>':""}</td><td>${r.people}</td><td><b>${money(r.share)}</b>${r.share>MAXSHARE?' <span class="tag">high</span>':""}</td><td><button data-d="${r.id}" aria-label="Delete ${esc(r.desc)}">Delete</button></td></tr>`).join(""):`<tr><td colspan="8" class="empty">${data.length?"No matches. Try a different word or category.":"No splits saved yet. Save one from the Split tab, or load sample data."}</td></tr>`;
+  $("pg").textContent=`Page ${page+1} of ${pages}`;$("prev").disabled=page===0;$("next").disabled=page>=pages-1;newId=null;
+}
+$("rows").onclick=e=>{const id=e.target.dataset.d;if(id){data=data.filter(r=>r.id!==Number(id));store();renderHist()}};
+$("q").oninput=$("fcat").onchange=()=>{page=0;renderHist()};
+$("prev").onclick=()=>{page--;renderHist()};$("next").onclick=()=>{page++;renderHist()};
+$("wipe").onclick=()=>{if(data.length&&confirm("Delete all saved splits?")){data=[];store();renderHist();toast("All splits deleted")}};
+$("seed").onclick=()=>{
+  const cats=["Food","Rent & bills","Travel","Fun","Other"],names=["Pizza night","Electricity","Cab to airport","Movie","Groceries","Hostel stay","Birthday cake","Wi-Fi","Concert","Brunch"];
+  let s=7;const rnd=()=>(s=(s*9301+49297)%233280)/233280;
+  for(let i=0;i<32;i++){const bill=+(10+rnd()*rnd()*400).toFixed(2),people=1+Math.floor(rnd()*7),tip=[0,0,10,15,18,20,40][Math.floor(rnd()*7)],c=calc(bill,people,tip),d=new Date(Date.now()-i*864e5*2);
+    data.push({id:Date.now()+i,date:d.toISOString().slice(0,10),desc:names[Math.floor(rnd()*names.length)],cat:cats[Math.floor(rnd()*5)],bill,tip,people,total:+c.total.toFixed(2),share:+c.share.toFixed(2)})}
+  data.sort((a,b)=>b.date.localeCompare(a.date));store();renderHist();toast("32 sample splits loaded");
+};
+function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click()}
+$("x-csv").onclick=()=>{if(!data.length)return toast("Nothing to export yet");
+  const q=v=>`"${String(v).replace(/"/g,'""')}"`;
+  dl("bill-splits.csv","date,description,category,bill,tip_pct,people,total,share\n"+data.map(r=>[r.date,q(r.desc),q(r.cat),r.bill,r.tip,r.people,r.total,r.share].join(",")).join("\n"),"text/csv")};
+$("x-md").onclick=()=>{if(!data.length)return toast("Nothing to export yet");
+  dl("bill-splits.md","# Bill Splitter report\n\n| Date | For | Category | Bill | Tip | People | Each |\n|---|---|---|---|---|---|---|\n"+data.map(r=>`| ${r.date} | ${r.desc.replace(/\|/g,"/")} | ${r.cat} | ${money(r.bill)} | ${r.tip}% | ${r.people} | ${money(r.share)} |`).join("\n")+"\n","text/markdown")};
+
+/* summary */
+function renderSum(){
+  const n=data.length,sum=a=>a.reduce((x,y)=>x+y,0),total=sum(data.map(r=>r.total)),avg=n?sum(data.map(r=>r.share))/n:0,tip=n?sum(data.map(r=>r.tip))/n:0,flags=data.filter(r=>r.share>MAXSHARE||r.tip>MAXTIP).length;
+  $("stats").innerHTML=[[n,"splits saved"],[money(total),"total paid"],[money(avg),"average share"],[tip.toFixed(1)+"%","average tip"],[flags,"flagged entries"]].map(a=>`<div class="stat"><b>${a[0]}</b><span>${a[1]}</span></div>`).join("");
+  const cats=["Food","Rent & bills","Travel","Fun","Other"],tot=cats.map(c=>sum(data.filter(r=>r.cat===c).map(r=>r.total))),mx=Math.max(1,...tot);
+  $("bars").innerHTML=cats.map((c,i)=>`<div class="bar">${tot[i]?money(tot[i]).replace(/\.00$/,""):""}<div class="col" style="height:${Math.max(2,tot[i]/mx*85)}%;animation-delay:${i*.1}s"></div></div>`).join("");
+  $("lbls").innerHTML=cats.map(c=>`<div>${esc(c)}</div>`).join("");
+  const last=data.slice(0,12).reverse().map(r=>r.share),m=Math.max(1,...last),sv=$("spark");
+  if(last.length<2){sv.innerHTML="";$("trend").textContent="Save at least two splits to see a trend."}
+  else{const pts=last.map((v,i)=>`${10+i*280/(last.length-1)},${110-v/m*95}`).join(" ");
+    sv.innerHTML=`<line x1="0" x2="300" y1="${110-MAXSHARE/m*95}" y2="${110-MAXSHARE/m*95}" stroke="var(--red)" stroke-dasharray="4 4" vector-effect="non-scaling-stroke" ${MAXSHARE>m?'style="display:none"':""}/><polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="3" vector-effect="non-scaling-stroke"/>`;
+    const d=last[last.length-1]-last[0];$("trend").textContent=`Shares have ${d>=0?"risen":"fallen"} by ${money(Math.abs(d))} across these ${last.length} splits.`}
+}
+load();live();
+</script>
+</body>
+</html>
